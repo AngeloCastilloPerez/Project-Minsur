@@ -1,0 +1,108 @@
+{
+  "version": "0.5",
+  "id": "minsur-finanzas-lifecycle-policy",
+  "enabled": true,
+  "rules": [
+    {
+      "name": "landing-tier-to-cool",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": [
+            "finanzas-landing/ga/",
+            "finanzas-landing/cxc/",
+            "finanzas-landing/balance/",
+            "finanzas-landing/mercado/"
+          ]
+        },
+        "actions": {
+          "baseBlob": {
+            "tierToCool": {
+              "daysAfterModificationGreaterThan": 90
+            },
+            "tierToArchive": {
+              "daysAfterModificationGreaterThan": 365
+            }
+          },
+          "snapshot": {
+            "delete": {
+              "daysAfterCreationGreaterThan": 90
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "delete-temp-files",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": [
+            "finanzas-landing/tmp/",
+            "finanzas-staging/tmp/"
+          ]
+        },
+        "actions": {
+          "baseBlob": {
+            "delete": {
+              "daysAfterModificationGreaterThan": 30
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "staging-to-cool",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": [
+            "finanzas-staging/ga/",
+            "finanzas-staging/cxc/",
+            "finanzas-staging/balance/",
+            "finanzas-staging/mercado/"
+          ]
+        },
+        "actions": {
+          "baseBlob": {
+            "tierToCool": {
+              "daysAfterModificationGreaterThan": 180
+            },
+            "tierToArchive": {
+              "daysAfterModificationGreaterThan": 730
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "logs-cleanup",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": [
+            "finanzas-logs/"
+          ]
+        },
+        "actions": {
+          "baseBlob": {
+            "tierToCool": {
+              "daysAfterModificationGreaterThan": 30
+            },
+            "delete": {
+              "daysAfterModificationGreaterThan": 365
+            }
+          }
+        }
+      }
+    }
+  ]
+}

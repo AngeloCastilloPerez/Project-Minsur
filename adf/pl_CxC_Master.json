@@ -1,0 +1,172 @@
+{
+  "name": "pl_CxC_Master",
+  "properties": {
+    "description": "Pipeline maestro para el dominio CxC (Cuentas por Cobrar). Copia datos desde Azure SQL (réplica SAP) al ADLS landing y ejecuta transformaciones en Databricks.",
+    "parameters": {
+      "environment": {
+        "type": "string",
+        "defaultValue": "dev",
+        "description": "Entorno de ejecución: dev, stg, prd"
+      },
+      "execution_id": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Identificador único de ejecución (GUID)"
+      },
+      "storage_account": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Nombre de la cuenta de almacenamiento ADLS Gen2"
+      }
+    },
+    "activities": [
+      {
+        "name": "CopyFromAzureSQL_SAPReplica",
+        "description": "Copia los datos de cuentas por cobrar desde la tabla de réplica SAP en Azure SQL hacia el contenedor landing en ADLS Gen2 en formato Parquet",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource",
+            "sqlReaderQuery": {
+              "value": "SELECT * FROM dbo.EXT_CXC_REAL WITH (NOLOCK) WHERE FECHA_ACTUALIZACION >= CAST(GETDATE()-1 AS DATE)",
+              "type": "Expression"
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "sink": {
+            "type": "ParquetSink",
+            "storeSettings": {
+              "type": "AzureBlobFSWriteSettings",
+              "copyBehavior": "FlattenHierarchy"
+            },
+            "formatSettings": {
+              "type": "ParquetWriteSettings"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_AzureSQL_CxC_Source",
+            "type": "DatasetReference"
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_ADLS_CxC_Landing",
+            "type": "DatasetReference",
+            "parameters": {
+              "storage_account": {
+                "value": "@pipeline().parameters.storage_account",
+                "type": "Expression"
+              },
+              "execution_id": {
+                "value": "@pipeline().parameters.execution_id",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "RunDatabricks_CxC_Real",
+        "description": "Ejecuta el notebook de transformación de datos reales CxC: limpieza, homologación y escritura en curated y FACT_CXC_REAL",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "CopyFromAzureSQL_SAPReplica",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/CxC/nb_CxC_01_Real",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "RunDatabricks_CxC_Exportable",
+        "description": "Ejecuta el notebook exportable CxC: genera el dataset consolidado para consumo en Power BI",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "RunDatabricks_CxC_Real",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/CxC/nb_CxC_02_Exportable",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      }
+    ],
+    "annotations": ["CxC", "ETL", "Minsur"],
+    "folder": {
+      "name": "Minsur/CxC"
+    }
+  }
+}

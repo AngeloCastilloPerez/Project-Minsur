@@ -1,0 +1,100 @@
+-- ============================================================
+-- DDL: Balance General Domain Tables
+-- Database: BD_FINANZAS
+-- Schema: dbo
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- EXT_BALANCE_REAL: External/staging raw balance data from SharePoint Excel
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.EXT_BALANCE_REAL', 'U') IS NOT NULL DROP TABLE dbo.EXT_BALANCE_REAL;
+CREATE TABLE dbo.EXT_BALANCE_REAL (
+    ID_EXT_BALANCE      BIGINT          IDENTITY(1,1)   NOT NULL,
+    EMPRESA             VARCHAR(4)      NOT NULL,
+    CUENTA_CONTABLE     VARCHAR(10)     NOT NULL,
+    DESCRIPCION_CUENTA  VARCHAR(200)    NULL,
+    CLASIFICACION       VARCHAR(50)     NULL,
+    GRUPO_BALANCE       VARCHAR(100)    NULL,
+    SUBGRUPO            VARCHAR(100)    NULL,
+    ANIO_FISCAL         SMALLINT        NOT NULL,
+    PERIODO             TINYINT         NOT NULL,
+    SALDO_ML            DECIMAL(18,2)   NULL,
+    SALDO_USD           DECIMAL(18,2)   NULL,
+    EXECUTION_ID        VARCHAR(100)    NOT NULL,
+    FECHA_CARGA         DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_EXT_BALANCE_REAL PRIMARY KEY CLUSTERED (ID_EXT_BALANCE)
+);
+CREATE INDEX IX_EXT_BALANCE_PERIOD ON dbo.EXT_BALANCE_REAL (ANIO_FISCAL, PERIODO);
+GO
+
+-- ------------------------------------------------------------
+-- DIM_BALANCE_CUENTA: Balance account dimension
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.DIM_BALANCE_CUENTA', 'U') IS NOT NULL DROP TABLE dbo.DIM_BALANCE_CUENTA;
+CREATE TABLE dbo.DIM_BALANCE_CUENTA (
+    ID_CUENTA           INT             IDENTITY(1,1)   NOT NULL,
+    CUENTA_CONTABLE     VARCHAR(10)     NOT NULL,
+    DESCRIPCION_CUENTA  VARCHAR(200)    NOT NULL,
+    CLASIFICACION       VARCHAR(50)     NULL,           -- ACTIVO CORRIENTE, PASIVO CORRIENTE, etc.
+    GRUPO_BALANCE       VARCHAR(100)    NULL,
+    SUBGRUPO            VARCHAR(100)    NULL,
+    LADO_BALANCE        VARCHAR(15)     NULL,           -- ACTIVO / PASIVO / PATRIMONIO
+    TIPO_NATURALEZA     VARCHAR(10)     NULL,           -- DEUDORA / ACREEDORA
+    ACTIVO              BIT             NOT NULL DEFAULT 1,
+    FECHA_ACTUALIZACION DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_DIM_BALANCE_CUENTA PRIMARY KEY CLUSTERED (ID_CUENTA),
+    CONSTRAINT UQ_DIM_BALANCE_CUENTA UNIQUE (CUENTA_CONTABLE)
+);
+GO
+
+-- ------------------------------------------------------------
+-- FACT_BALANCE_REAL: Fact table for Balance General real data
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.FACT_BALANCE_REAL', 'U') IS NOT NULL DROP TABLE dbo.FACT_BALANCE_REAL;
+CREATE TABLE dbo.FACT_BALANCE_REAL (
+    ID_FACT_BALANCE     BIGINT          IDENTITY(1,1)   NOT NULL,
+    EMPRESA             VARCHAR(4)      NOT NULL,
+    CUENTA_CONTABLE     VARCHAR(10)     NOT NULL,
+    DESCRIPCION_CUENTA  VARCHAR(200)    NULL,
+    CLASIFICACION       VARCHAR(50)     NULL,
+    GRUPO_BALANCE       VARCHAR(100)    NULL,
+    SUBGRUPO            VARCHAR(100)    NULL,
+    LADO_BALANCE        VARCHAR(15)     NULL,
+    ANIO_FISCAL         SMALLINT        NOT NULL,
+    PERIODO             TINYINT         NOT NULL,
+    PERIODO_LABEL       VARCHAR(7)      NOT NULL,
+    SALDO_ML            DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    SALDO_USD           DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    EXECUTION_ID        VARCHAR(100)    NOT NULL,
+    FECHA_PROCESO       DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_FACT_BALANCE_REAL PRIMARY KEY CLUSTERED (ID_FACT_BALANCE)
+);
+CREATE INDEX IX_FACT_BALANCE_PERIOD  ON dbo.FACT_BALANCE_REAL (ANIO_FISCAL, PERIODO);
+CREATE INDEX IX_FACT_BALANCE_CUENTA  ON dbo.FACT_BALANCE_REAL (CUENTA_CONTABLE);
+CREATE INDEX IX_FACT_BALANCE_LADO    ON dbo.FACT_BALANCE_REAL (LADO_BALANCE);
+GO
+
+-- ------------------------------------------------------------
+-- FACT_BALANCE_EXPORTABLE: Aggregated balance for Power BI
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.FACT_BALANCE_EXPORTABLE', 'U') IS NOT NULL DROP TABLE dbo.FACT_BALANCE_EXPORTABLE;
+CREATE TABLE dbo.FACT_BALANCE_EXPORTABLE (
+    ID_FACT_BALANCE_EXP BIGINT          IDENTITY(1,1)   NOT NULL,
+    EMPRESA             VARCHAR(4)      NOT NULL,
+    CLASIFICACION       VARCHAR(50)     NULL,
+    GRUPO_BALANCE       VARCHAR(100)    NULL,
+    SUBGRUPO            VARCHAR(100)    NULL,
+    LADO_BALANCE        VARCHAR(15)     NULL,
+    ANIO_FISCAL         SMALLINT        NOT NULL,
+    PERIODO             TINYINT         NOT NULL,
+    PERIODO_LABEL       VARCHAR(7)      NOT NULL,
+    TOTAL_ML            DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    TOTAL_USD           DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    QTY_CUENTAS         INT             NULL,
+    EXECUTION_ID        VARCHAR(100)    NOT NULL,
+    FECHA_PROCESO       DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_FACT_BALANCE_EXP PRIMARY KEY CLUSTERED (ID_FACT_BALANCE_EXP)
+);
+CREATE INDEX IX_FACT_BALANCE_EXP_PERIOD ON dbo.FACT_BALANCE_EXPORTABLE (ANIO_FISCAL, PERIODO);
+CREATE INDEX IX_FACT_BALANCE_EXP_LADO   ON dbo.FACT_BALANCE_EXPORTABLE (LADO_BALANCE);
+GO

@@ -1,0 +1,79 @@
+{
+  "cluster_name": "minsur-etl-cluster",
+  "spark_version": "13.3.x-scala2.12",
+  "node_type_id": "Standard_DS3_v2",
+  "driver_node_type_id": "Standard_DS3_v2",
+  "autoscale": {
+    "min_workers": 2,
+    "max_workers": 8
+  },
+  "autotermination_minutes": 30,
+  "enable_elastic_disk": true,
+  "disk_spec": {
+    "disk_type": {
+      "azure_disk_volume_type": "PREMIUM_LRS"
+    },
+    "disk_size": 100,
+    "disk_count": 2
+  },
+  "spark_conf": {
+    "spark.databricks.delta.preview.enabled": "true",
+    "spark.sql.adaptive.enabled": "true",
+    "spark.sql.adaptive.coalescePartitions.enabled": "true",
+    "spark.databricks.io.cache.enabled": "true",
+    "spark.databricks.io.cache.maxDiskUsage": "50g",
+    "spark.databricks.io.cache.maxMetaDataCache": "1g",
+    "fs.azure.account.auth.type": "OAuth",
+    "fs.azure.account.oauth.provider.type": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider"
+  },
+  "spark_env_vars": {
+    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+  },
+  "azure_attributes": {
+    "first_on_demand": 1,
+    "availability": "SPOT_WITH_FALLBACK_AZURE",
+    "spot_bid_max_price": -1
+  },
+  "libraries": [
+    {
+      "pypi": {
+        "package": "pyodbc==5.0.1"
+      }
+    },
+    {
+      "pypi": {
+        "package": "zeep==4.2.1"
+      }
+    },
+    {
+      "pypi": {
+        "package": "azure-storage-file-datalake==12.14.0"
+      }
+    },
+    {
+      "pypi": {
+        "package": "azure-identity==1.15.0"
+      }
+    },
+    {
+      "maven": {
+        "coordinates": "com.crealytics:spark-excel_2.12:3.3.1_0.19.0"
+      }
+    }
+  ],
+  "cluster_log_conf": {
+    "dbfs": {
+      "destination": "dbfs:/cluster-logs/minsur-etl-cluster"
+    }
+  },
+  "init_scripts": [],
+  "custom_tags": {
+    "project": "minsur-etl",
+    "environment": "prd",
+    "team": "datos-financieros",
+    "cost_center": "FINANZAS"
+  },
+  "runtime_engine": "PHOTON",
+  "data_security_mode": "SINGLE_USER",
+  "single_user_name": "svc-databricks@minsur.com"
+}

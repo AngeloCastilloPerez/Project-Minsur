@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.so
+
+# Environments
+.env
+*.env
+venv/
+.venv/
+
+# Logs & temp
+*.log
+*.tmp
+
+# Jupyter
+*.ipynb_checkpoints/
+
+# Databricks
+.databricks/
+
+# Node
+node_modules/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Java / Scala
+target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Archives
+*.zip
+
+# ADF publish branch artefacts
+adf/publish/
