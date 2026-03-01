@@ -25,7 +25,7 @@ logger.info(f"Starting nb_GA_03_Plans | env={environment} | exec_id={execution_i
 
 # COMMAND ----------
 # ADLS Gen2 connection via Key Vault secret scope
-storage_key = dbutils.secrets.get(scope="kv-minsur", key="adls-storage-key")
+storage_key = dbutils.secrets.get(scope="kv-test", key="test-adls-storage-key")
 spark.conf.set(
     f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
     storage_key
@@ -33,10 +33,10 @@ spark.conf.set(
 
 # COMMAND ----------
 # Medallion paths
-landing_path = f"abfss://finanzas-landing@{storage_account}.dfs.core.windows.net/ga/"
-staging_path = f"abfss://finanzas-staging@{storage_account}.dfs.core.windows.net/ga/"
-curated_path = f"abfss://finanzas-curated@{storage_account}.dfs.core.windows.net/ga/"
-logs_path    = f"abfss://finanzas-logs@{storage_account}.dfs.core.windows.net/ga/plans/"
+landing_path = f"abfss://test-landing@{storage_account}.dfs.core.windows.net/ga/"
+staging_path = f"abfss://test-staging@{storage_account}.dfs.core.windows.net/ga/"
+curated_path = f"abfss://test-curated@{storage_account}.dfs.core.windows.net/ga/"
+logs_path    = f"abfss://test-logs@{storage_account}.dfs.core.windows.net/ga/plans/"
 
 # COMMAND ----------
 # DBTITLE 2, Read plan data from landing (Excel uploaded from SharePoint via ADF)
@@ -121,7 +121,7 @@ logger.info(f"Written to curated: {curated_path}plan/")
 
 # COMMAND ----------
 # DBTITLE 6, ACID SQL write to FACT_GA_PLAN
-conn_str = dbutils.secrets.get(scope="kv-minsur", key="sql-connection-string")
+conn_str = dbutils.secrets.get(scope="kv-test", key="test-sql-connection-string")
 rows = df_plan.collect()
 
 if not rows:

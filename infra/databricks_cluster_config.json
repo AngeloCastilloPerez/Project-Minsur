@@ -1,5 +1,5 @@
 {
-  "cluster_name": "minsur-etl-cluster",
+  "cluster_name": "test-etl-cluster",
   "spark_version": "13.3.x-scala2.12",
   "node_type_id": "Standard_DS3_v2",
   "driver_node_type_id": "Standard_DS3_v2",
@@ -63,17 +63,17 @@
   ],
   "cluster_log_conf": {
     "dbfs": {
-      "destination": "dbfs:/cluster-logs/minsur-etl-cluster"
+      "destination": "dbfs:/cluster-logs/test-etl-cluster"
     }
   },
   "init_scripts": [],
   "custom_tags": {
-    "project": "minsur-etl",
+    "project": "test-etl",
     "environment": "prd",
-    "team": "datos-financieros",
-    "cost_center": "FINANZAS"
+    "team": "test-team",
+    "cost_center": "TEST"
   },
   "runtime_engine": "PHOTON",
   "data_security_mode": "SINGLE_USER",
-  "single_user_name": "svc-databricks@minsur.com"
+  "single_user_name": "svc-databricks@test.com"
 }

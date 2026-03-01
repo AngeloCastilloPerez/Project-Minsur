@@ -1,6 +1,6 @@
 {
   "version": "0.5",
-  "id": "minsur-finanzas-lifecycle-policy",
+  "id": "test-lifecycle-policy",
   "enabled": true,
   "rules": [
     {
@@ -11,10 +11,10 @@
         "filters": {
           "blobTypes": ["blockBlob"],
           "prefixMatch": [
-            "finanzas-landing/ga/",
-            "finanzas-landing/cxc/",
-            "finanzas-landing/balance/",
-            "finanzas-landing/mercado/"
+            "test-landing/ga/",
+            "test-landing/cxc/",
+            "test-landing/balance/",
+            "test-landing/mercado/"
           ]
         },
         "actions": {
@@ -42,8 +42,8 @@
         "filters": {
           "blobTypes": ["blockBlob"],
           "prefixMatch": [
-            "finanzas-landing/tmp/",
-            "finanzas-staging/tmp/"
+            "test-landing/tmp/",
+            "test-staging/tmp/"
           ]
         },
         "actions": {
@@ -63,10 +63,10 @@
         "filters": {
           "blobTypes": ["blockBlob"],
           "prefixMatch": [
-            "finanzas-staging/ga/",
-            "finanzas-staging/cxc/",
-            "finanzas-staging/balance/",
-            "finanzas-staging/mercado/"
+            "test-staging/ga/",
+            "test-staging/cxc/",
+            "test-staging/balance/",
+            "test-staging/mercado/"
           ]
         },
         "actions": {
@@ -89,7 +89,7 @@
         "filters": {
           "blobTypes": ["blockBlob"],
           "prefixMatch": [
-            "finanzas-logs/"
+            "test-logs/"
           ]
         },
         "actions": {
