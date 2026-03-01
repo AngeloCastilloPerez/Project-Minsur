@@ -34,7 +34,7 @@
         },
         "typeProperties": {
           "url": {
-            "value": "@concat('https://', pipeline().parameters.environment, '-sharepoint-proxy.minsur.com/api/metadata/ga')",
+            "value": "@concat('https://', pipeline().parameters.environment, '-sharepoint-proxy.test.com/api/metadata/ga')",
             "type": "Expression"
           },
           "method": "GET",
@@ -52,7 +52,7 @@
       },
       {
         "name": "CallAzureFunctionSAPSOAP",
-        "description": "Invoca la Azure Function que realiza la llamada SOAP al servicio SAP ZmfCoSAlr87013613 para extraer datos de gastos administrativos",
+        "description": "Invoca la Azure Function que realiza la llamada SOAP al servicio SAP ZmfTestService para extraer datos de gastos administrativos",
         "type": "AzureFunctionActivity",
         "dependsOn": [
           {
@@ -69,13 +69,13 @@
         },
         "typeProperties": {
           "functionLinkedService": {
-            "referenceName": "ls_AzureFunction_Minsur",
+            "referenceName": "ls_AzureFunction_Test",
             "type": "LinkedServiceReference"
           },
           "functionName": "sap_gastos",
           "method": "POST",
           "body": {
-            "value": "@json(concat('{\"fiscal_year\":\"', formatDateTime(utcNow(), 'yyyy'), '\",\"period\":\"', formatDateTime(utcNow(), 'MM'), '\",\"company_code\":\"1000\",\"environment\":\"', pipeline().parameters.environment, '\",\"execution_id\":\"', pipeline().parameters.execution_id, '\",\"storage_account\":\"', pipeline().parameters.storage_account, '\"}'))",
+            "value": "@json(concat('{\"fiscal_year\":\"', formatDateTime(utcNow(), 'yyyy'), '\",\"period\":\"', formatDateTime(utcNow(), 'MM'), '\",\"company_code\":\"TEST1\",\"environment\":\"', pipeline().parameters.environment, '\",\"execution_id\":\"', pipeline().parameters.execution_id, '\",\"storage_account\":\"', pipeline().parameters.storage_account, '\"}'))",
             "type": "Expression"
           }
         }
@@ -98,7 +98,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_01_Homologaciones",
+          "notebookPath": "/test-etl/databricks/GA/nb_GA_01_Homologaciones",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -115,7 +115,7 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       },
@@ -137,7 +137,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_02_Real",
+          "notebookPath": "/test-etl/databricks/GA/nb_GA_02_Real",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -154,7 +154,7 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       },
@@ -176,7 +176,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_03_Plans",
+          "notebookPath": "/test-etl/databricks/GA/nb_GA_03_Plans",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -193,7 +193,7 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       },
@@ -219,7 +219,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_04_Exportable",
+          "notebookPath": "/test-etl/databricks/GA/nb_GA_04_Exportable",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -236,14 +236,14 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       }
     ],
-    "annotations": ["GA", "ETL", "Minsur"],
+    "annotations": ["GA", "ETL", "Test"],
     "folder": {
-      "name": "Minsur/GA"
+      "name": "Test/GA"
     }
   }
 }

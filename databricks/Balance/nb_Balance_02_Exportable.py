@@ -25,7 +25,7 @@ logger.info(f"Starting nb_Balance_02_Exportable | env={environment} | exec_id={e
 
 # COMMAND ----------
 # ADLS Gen2 connection via Key Vault secret scope
-storage_key = dbutils.secrets.get(scope="kv-minsur", key="adls-storage-key")
+storage_key = dbutils.secrets.get(scope="kv-test", key="test-adls-storage-key")
 spark.conf.set(
     f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
     storage_key
@@ -33,8 +33,8 @@ spark.conf.set(
 
 # COMMAND ----------
 # Medallion paths
-curated_path = f"abfss://finanzas-curated@{storage_account}.dfs.core.windows.net/balance/"
-logs_path    = f"abfss://finanzas-logs@{storage_account}.dfs.core.windows.net/balance/exportable/"
+curated_path = f"abfss://test-curated@{storage_account}.dfs.core.windows.net/balance/"
+logs_path    = f"abfss://test-logs@{storage_account}.dfs.core.windows.net/balance/exportable/"
 
 # COMMAND ----------
 # DBTITLE 2, Read curated Balance data
@@ -79,7 +79,7 @@ logger.info(f"Written to curated exportable: {curated_path}exportable/")
 
 # COMMAND ----------
 # DBTITLE 5, ACID SQL write to FACT_BALANCE_EXPORTABLE
-conn_str = dbutils.secrets.get(scope="kv-minsur", key="sql-connection-string")
+conn_str = dbutils.secrets.get(scope="kv-test", key="test-sql-connection-string")
 rows = df_exportable.collect()
 
 conn = pyodbc.connect(conn_str)

@@ -86,7 +86,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/Mercado/nb_Mercado_01_Real",
+          "notebookPath": "/test-etl/databricks/Mercado/nb_Mercado_01_Real",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -103,7 +103,7 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       },
@@ -125,7 +125,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/Mercado/nb_Mercado_02_Exportable",
+          "notebookPath": "/test-etl/databricks/Mercado/nb_Mercado_02_Exportable",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -142,12 +142,12 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       }
     ],
-    "annotations": ["Mercado", "ETL", "Minsur"],
+    "annotations": ["Mercado", "ETL", "Test"],
     "folder": {
       "name": "Minsur/Mercado"
     }

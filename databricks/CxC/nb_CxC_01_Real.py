@@ -25,7 +25,7 @@ logger.info(f"Starting nb_CxC_01_Real | env={environment} | exec_id={execution_i
 
 # COMMAND ----------
 # ADLS Gen2 connection via Key Vault secret scope
-storage_key = dbutils.secrets.get(scope="kv-minsur", key="adls-storage-key")
+storage_key = dbutils.secrets.get(scope="kv-test", key="test-adls-storage-key")
 spark.conf.set(
     f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
     storage_key
@@ -33,10 +33,10 @@ spark.conf.set(
 
 # COMMAND ----------
 # Medallion paths
-landing_path = f"abfss://finanzas-landing@{storage_account}.dfs.core.windows.net/cxc/"
-staging_path = f"abfss://finanzas-staging@{storage_account}.dfs.core.windows.net/cxc/"
-curated_path = f"abfss://finanzas-curated@{storage_account}.dfs.core.windows.net/cxc/"
-logs_path    = f"abfss://finanzas-logs@{storage_account}.dfs.core.windows.net/cxc/real/"
+landing_path = f"abfss://test-landing@{storage_account}.dfs.core.windows.net/cxc/"
+staging_path = f"abfss://test-staging@{storage_account}.dfs.core.windows.net/cxc/"
+curated_path = f"abfss://test-curated@{storage_account}.dfs.core.windows.net/cxc/"
+logs_path    = f"abfss://test-logs@{storage_account}.dfs.core.windows.net/cxc/real/"
 
 # COMMAND ----------
 # DBTITLE 2, Read landing data (Parquet from ADF CopyActivity – Azure SQL replica)
@@ -127,7 +127,7 @@ logger.info(f"Written to curated: {curated_path}real/ | Records: {total_records}
 
 # COMMAND ----------
 # DBTITLE 6, ACID SQL write to FACT_CXC_REAL
-conn_str = dbutils.secrets.get(scope="kv-minsur", key="sql-connection-string")
+conn_str = dbutils.secrets.get(scope="kv-test", key="test-sql-connection-string")
 rows = df_std.collect()
 
 conn = pyodbc.connect(conn_str)

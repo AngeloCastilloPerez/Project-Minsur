@@ -103,7 +103,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/CxC/nb_CxC_01_Real",
+          "notebookPath": "/test-etl/databricks/CxC/nb_CxC_01_Real",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -120,7 +120,7 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       },
@@ -142,7 +142,7 @@
           "secureInput": false
         },
         "typeProperties": {
-          "notebookPath": "/minsur-etl/databricks/CxC/nb_CxC_02_Exportable",
+          "notebookPath": "/test-etl/databricks/CxC/nb_CxC_02_Exportable",
           "baseParameters": {
             "storage_account": {
               "value": "@pipeline().parameters.storage_account",
@@ -159,12 +159,12 @@
           }
         },
         "linkedServiceName": {
-          "referenceName": "ls_Databricks_Minsur",
+          "referenceName": "ls_Databricks_Test",
           "type": "LinkedServiceReference"
         }
       }
     ],
-    "annotations": ["CxC", "ETL", "Minsur"],
+    "annotations": ["CxC", "ETL", "Test"],
     "folder": {
       "name": "Minsur/CxC"
     }

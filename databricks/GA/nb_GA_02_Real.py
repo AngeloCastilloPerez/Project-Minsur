@@ -25,7 +25,7 @@ logger.info(f"Starting nb_GA_02_Real | env={environment} | exec_id={execution_id
 
 # COMMAND ----------
 # ADLS Gen2 connection via Key Vault secret scope
-storage_key = dbutils.secrets.get(scope="kv-minsur", key="adls-storage-key")
+storage_key = dbutils.secrets.get(scope="kv-test", key="test-adls-storage-key")
 spark.conf.set(
     f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
     storage_key
@@ -33,9 +33,9 @@ spark.conf.set(
 
 # COMMAND ----------
 # Medallion paths
-staging_path = f"abfss://finanzas-staging@{storage_account}.dfs.core.windows.net/ga/"
-curated_path = f"abfss://finanzas-curated@{storage_account}.dfs.core.windows.net/ga/"
-logs_path    = f"abfss://finanzas-logs@{storage_account}.dfs.core.windows.net/ga/real/"
+staging_path = f"abfss://test-staging@{storage_account}.dfs.core.windows.net/ga/"
+curated_path = f"abfss://test-curated@{storage_account}.dfs.core.windows.net/ga/"
+logs_path    = f"abfss://test-logs@{storage_account}.dfs.core.windows.net/ga/real/"
 
 # COMMAND ----------
 # DBTITLE 2, Read homologated data from staging
@@ -60,7 +60,7 @@ df_real = (
         F.concat(F.col("ANIO_FISCAL").cast(StringType()), F.lit("-"), F.lpad(F.col("PERIODO").cast(StringType()), 2, "0"))
     )
     # Keep only real (actual) records – filter out plan entries if mixed
-    .filter(F.col("EMPRESA").isin(["1000", "1100", "1200"]))
+    .filter(F.col("EMPRESA").isin(["TEST1", "TEST2", "TEST3"]))
     .select(
         "EMPRESA",
         "CENTRO_COSTO_SAP",
@@ -100,7 +100,7 @@ logger.info(f"Written to curated: {curated_path}real/")
 
 # COMMAND ----------
 # DBTITLE 5, ACID SQL write to FACT_GA_REAL
-conn_str = dbutils.secrets.get(scope="kv-minsur", key="sql-connection-string")
+conn_str = dbutils.secrets.get(scope="kv-test", key="test-sql-connection-string")
 
 # Collect data for bulk insert (batched for performance)
 rows = df_real.collect()

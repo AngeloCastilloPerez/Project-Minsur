@@ -1,6 +1,6 @@
 -- ============================================================
 -- DDL: G&A (Gastos Administrativos) Domain Tables
--- Database: BD_FINANZAS
+-- Database: BD_TEST
 -- Schema: dbo
 -- ============================================================
 

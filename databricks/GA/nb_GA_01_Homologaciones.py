@@ -24,7 +24,7 @@ logger.info(f"Starting nb_GA_01_Homologaciones | env={environment} | exec_id={ex
 
 # COMMAND ----------
 # ADLS Gen2 connection via Key Vault secret scope
-storage_key = dbutils.secrets.get(scope="kv-minsur", key="adls-storage-key")
+storage_key = dbutils.secrets.get(scope="kv-test", key="test-adls-storage-key")
 spark.conf.set(
     f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
     storage_key
@@ -32,9 +32,9 @@ spark.conf.set(
 
 # COMMAND ----------
 # Medallion paths for G&A
-landing_path = f"abfss://finanzas-landing@{storage_account}.dfs.core.windows.net/ga/"
-staging_path = f"abfss://finanzas-staging@{storage_account}.dfs.core.windows.net/ga/"
-logs_path    = f"abfss://finanzas-logs@{storage_account}.dfs.core.windows.net/ga/homologaciones/"
+landing_path = f"abfss://test-landing@{storage_account}.dfs.core.windows.net/ga/"
+staging_path = f"abfss://test-staging@{storage_account}.dfs.core.windows.net/ga/"
+logs_path    = f"abfss://test-logs@{storage_account}.dfs.core.windows.net/ga/homologaciones/"
 
 # COMMAND ----------
 # DBTITLE 2, Read raw GA data from landing (JSON from SAP SOAP Azure Function)

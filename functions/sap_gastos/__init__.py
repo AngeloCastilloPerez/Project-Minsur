@@ -20,8 +20,8 @@ logger.setLevel(logging.INFO)
 def main(req: func.HttpRequest) -> func.HttpResponse:
     """
     Azure Function – HTTP POST trigger.
-    Calls SAP SOAP web service ZmfCoSAlr87013613 to extract G&A cost data
-    and saves the result as a JSON file in ADLS Gen2 finanzas-landing/ga/real/.
+    Calls SAP SOAP web service ZmfTestService to extract G&A cost data
+    and saves the result as a JSON file in ADLS Gen2 test-landing/ga/real/.
     """
     logger.info("sap_gastos function triggered.")
 
@@ -39,7 +39,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     fiscal_year     = body.get("fiscal_year")
     period          = body.get("period")
-    company_code    = body.get("company_code", "1000")
+    company_code    = body.get("company_code", "TEST1")
     environment     = body.get("environment", "dev")
     execution_id    = body.get("execution_id") or str(uuid.uuid4())
     storage_account = body.get("storage_account")
@@ -67,7 +67,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     # -------------------------------------------------------------------------
-    # 3. Call SAP SOAP web service ZmfCoSAlr87013613
+    # 3. Call SAP SOAP web service ZmfTestService
     # -------------------------------------------------------------------------
     try:
         logger.info(f"Calling SAP SOAP service | fiscal_year={fiscal_year} | period={period} | company={company_code}")
@@ -85,7 +85,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
         # Call the SAP BAPI/RFC exposed as SOAP
-        response = client.service.ZmfCoSAlr87013613(
+        response = client.service.ZmfTestService(
             I_BUKRS=company_code,
             I_GJAHR=str(fiscal_year),
             I_MONAT=str(period).zfill(2),
@@ -120,7 +120,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     # -------------------------------------------------------------------------
-    # 4. Save JSON output to ADLS Gen2 finanzas-landing/ga/real/
+    # 4. Save JSON output to ADLS Gen2 test-landing/ga/real/
     # -------------------------------------------------------------------------
     try:
         output = {
@@ -138,7 +138,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         file_content = json.dumps(output, ensure_ascii=False, indent=2).encode("utf-8")
         file_name    = f"sap_ga_real_{fiscal_year}_{str(period).zfill(2)}_{execution_id}.json"
-        container    = "finanzas-landing"
+        container    = "test-landing"
         directory    = f"ga/real/execution_id={execution_id}"
 
         credential     = DefaultAzureCredential()
