@@ -1,0 +1,4 @@
+azure-functions
+zeep
+azure-storage-file-datalake
+azure-identity

@@ -1,0 +1,155 @@
+{
+  "name": "pl_Balance_Master",
+  "properties": {
+    "description": "Pipeline maestro para el dominio Balance General. Descarga el archivo Excel de SharePoint al ADLS landing y ejecuta la transformación en Databricks.",
+    "parameters": {
+      "environment": {
+        "type": "string",
+        "defaultValue": "dev",
+        "description": "Entorno de ejecución: dev, stg, prd"
+      },
+      "execution_id": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Identificador único de ejecución (GUID)"
+      },
+      "storage_account": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Nombre de la cuenta de almacenamiento ADLS Gen2"
+      }
+    },
+    "activities": [
+      {
+        "name": "CopySharePointExcel_Balance",
+        "description": "Copia el archivo Excel de Balance General desde SharePoint hacia el contenedor landing en ADLS Gen2",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "SharePointOnlineListSource",
+            "httpRequestTimeout": "00:05:00"
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "AzureBlobFSWriteSettings"
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_SharePoint_Balance_Excel",
+            "type": "DatasetReference"
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_ADLS_Balance_Landing",
+            "type": "DatasetReference",
+            "parameters": {
+              "storage_account": {
+                "value": "@pipeline().parameters.storage_account",
+                "type": "Expression"
+              },
+              "execution_id": {
+                "value": "@pipeline().parameters.execution_id",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "RunDatabricks_Balance_Real",
+        "description": "Ejecuta el notebook de transformación de Balance General: parsea el Excel, aplica estructura de balance y escribe en FACT_BALANCE_REAL",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "CopySharePointExcel_Balance",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/Balance/nb_Balance_01_Real",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "RunDatabricks_Balance_Exportable",
+        "description": "Ejecuta el notebook exportable Balance: genera el dataset para consumo en Power BI",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "RunDatabricks_Balance_Real",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/Balance/nb_Balance_02_Exportable",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      }
+    ],
+    "annotations": ["Balance", "ETL", "Minsur"],
+    "folder": {
+      "name": "Minsur/Balance"
+    }
+  }
+}

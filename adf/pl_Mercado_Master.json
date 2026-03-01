@@ -1,0 +1,155 @@
+{
+  "name": "pl_Mercado_Master",
+  "properties": {
+    "description": "Pipeline maestro para el dominio Mercado. Descarga el archivo Excel de datos de mercado desde SharePoint y ejecuta la transformación en Databricks.",
+    "parameters": {
+      "environment": {
+        "type": "string",
+        "defaultValue": "dev",
+        "description": "Entorno de ejecución: dev, stg, prd"
+      },
+      "execution_id": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Identificador único de ejecución (GUID)"
+      },
+      "storage_account": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Nombre de la cuenta de almacenamiento ADLS Gen2"
+      }
+    },
+    "activities": [
+      {
+        "name": "CopySharePointExcel_Mercado",
+        "description": "Copia el archivo Excel de datos de mercado desde SharePoint hacia el contenedor landing en ADLS Gen2",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "SharePointOnlineListSource",
+            "httpRequestTimeout": "00:05:00"
+          },
+          "sink": {
+            "type": "BinarySink",
+            "storeSettings": {
+              "type": "AzureBlobFSWriteSettings"
+            }
+          },
+          "enableStaging": false
+        },
+        "inputs": [
+          {
+            "referenceName": "ds_SharePoint_Mercado_Excel",
+            "type": "DatasetReference"
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "ds_ADLS_Mercado_Landing",
+            "type": "DatasetReference",
+            "parameters": {
+              "storage_account": {
+                "value": "@pipeline().parameters.storage_account",
+                "type": "Expression"
+              },
+              "execution_id": {
+                "value": "@pipeline().parameters.execution_id",
+                "type": "Expression"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "RunDatabricks_Mercado_Real",
+        "description": "Ejecuta el notebook de transformación de datos de mercado: parsea Excel, aplica transformaciones y escribe en FACT_MERCADO_REAL",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "CopySharePointExcel_Mercado",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/Mercado/nb_Mercado_01_Real",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "RunDatabricks_Mercado_Exportable",
+        "description": "Ejecuta el notebook exportable Mercado: genera el dataset consolidado para consumo en Power BI",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "RunDatabricks_Mercado_Real",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/Mercado/nb_Mercado_02_Exportable",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      }
+    ],
+    "annotations": ["Mercado", "ETL", "Minsur"],
+    "folder": {
+      "name": "Minsur/Mercado"
+    }
+  }
+}

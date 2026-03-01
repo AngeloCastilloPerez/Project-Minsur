@@ -1,0 +1,249 @@
+{
+  "name": "pl_GA_Master",
+  "properties": {
+    "description": "Pipeline maestro para el dominio G&A (Gastos Administrativos). Orquesta la extracción desde SAP SOAP vía Azure Function, la homologación y las transformaciones en Databricks.",
+    "parameters": {
+      "environment": {
+        "type": "string",
+        "defaultValue": "dev",
+        "description": "Entorno de ejecución: dev, stg, prd"
+      },
+      "execution_id": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Identificador único de ejecución (GUID)"
+      },
+      "storage_account": {
+        "type": "string",
+        "defaultValue": "",
+        "description": "Nombre de la cuenta de almacenamiento ADLS Gen2"
+      }
+    },
+    "activities": [
+      {
+        "name": "GetMetadataSharePoint",
+        "description": "Obtiene metadatos del archivo Excel en SharePoint para validar disponibilidad antes de la extracción",
+        "type": "WebActivity",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "url": {
+            "value": "@concat('https://', pipeline().parameters.environment, '-sharepoint-proxy.minsur.com/api/metadata/ga')",
+            "type": "Expression"
+          },
+          "method": "GET",
+          "headers": {
+            "x-execution-id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          },
+          "authentication": {
+            "type": "MSI",
+            "resource": "https://graph.microsoft.com"
+          }
+        }
+      },
+      {
+        "name": "CallAzureFunctionSAPSOAP",
+        "description": "Invoca la Azure Function que realiza la llamada SOAP al servicio SAP ZmfCoSAlr87013613 para extraer datos de gastos administrativos",
+        "type": "AzureFunctionActivity",
+        "dependsOn": [
+          {
+            "activity": "GetMetadataSharePoint",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "functionLinkedService": {
+            "referenceName": "ls_AzureFunction_Minsur",
+            "type": "LinkedServiceReference"
+          },
+          "functionName": "sap_gastos",
+          "method": "POST",
+          "body": {
+            "value": "@json(concat('{\"fiscal_year\":\"', formatDateTime(utcNow(), 'yyyy'), '\",\"period\":\"', formatDateTime(utcNow(), 'MM'), '\",\"company_code\":\"1000\",\"environment\":\"', pipeline().parameters.environment, '\",\"execution_id\":\"', pipeline().parameters.execution_id, '\",\"storage_account\":\"', pipeline().parameters.storage_account, '\"}'))",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "RunDatabricksHomologaciones",
+        "description": "Ejecuta el notebook de homologaciones: limpia datos crudos y aplica mapeos de centros de costo y cuentas GL",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "CallAzureFunctionSAPSOAP",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_01_Homologaciones",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "RunDatabricksReal",
+        "description": "Ejecuta el notebook de datos reales G&A: transforma y escribe en curated y en FACT_GA_REAL",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "RunDatabricksHomologaciones",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_02_Real",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "RunDatabricksPlans",
+        "description": "Ejecuta el notebook de planes G&A: transforma datos presupuestados y escribe en FACT_GA_PLAN",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "RunDatabricksHomologaciones",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_03_Plans",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "RunDatabricksExportable",
+        "description": "Ejecuta el notebook exportable G&A: consolida real + plan y genera FACT_GA_EXPORTABLE",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "RunDatabricksReal",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "RunDatabricksPlans",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookPath": "/minsur-etl/databricks/GA/nb_GA_04_Exportable",
+          "baseParameters": {
+            "storage_account": {
+              "value": "@pipeline().parameters.storage_account",
+              "type": "Expression"
+            },
+            "environment": {
+              "value": "@pipeline().parameters.environment",
+              "type": "Expression"
+            },
+            "execution_id": {
+              "value": "@pipeline().parameters.execution_id",
+              "type": "Expression"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "ls_Databricks_Minsur",
+          "type": "LinkedServiceReference"
+        }
+      }
+    ],
+    "annotations": ["GA", "ETL", "Minsur"],
+    "folder": {
+      "name": "Minsur/GA"
+    }
+  }
+}

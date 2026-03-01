@@ -1,0 +1,106 @@
+-- ============================================================
+-- DDL: Mercado (Market) Domain Tables
+-- Database: BD_FINANZAS
+-- Schema: dbo
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- EXT_MERCADO_REAL: External/staging raw market data from SharePoint Excel
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.EXT_MERCADO_REAL', 'U') IS NOT NULL DROP TABLE dbo.EXT_MERCADO_REAL;
+CREATE TABLE dbo.EXT_MERCADO_REAL (
+    ID_EXT_MERCADO      BIGINT          IDENTITY(1,1)   NOT NULL,
+    EMPRESA             VARCHAR(4)      NOT NULL,
+    PRODUCTO_COD        VARCHAR(20)     NOT NULL,
+    PRODUCTO_DESC       VARCHAR(200)    NULL,
+    METAL               VARCHAR(10)     NULL,           -- AU, AG, CU, ZN, PB, SN
+    UNIDAD_MEDIDA       VARCHAR(10)     NULL,           -- TON, OZ, LB, KG
+    ANIO_FISCAL         SMALLINT        NOT NULL,
+    PERIODO             TINYINT         NOT NULL,
+    VOLUMEN_REAL        DECIMAL(18,4)   NULL,
+    PRECIO_REAL_USD     DECIMAL(18,4)   NULL,
+    INGRESO_REAL_ML     DECIMAL(18,2)   NULL,
+    INGRESO_REAL_USD    DECIMAL(18,2)   NULL,
+    TIPO_CAMBIO         DECIMAL(10,4)   NULL,
+    EXECUTION_ID        VARCHAR(100)    NOT NULL,
+    FECHA_CARGA         DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_EXT_MERCADO_REAL PRIMARY KEY CLUSTERED (ID_EXT_MERCADO)
+);
+CREATE INDEX IX_EXT_MERCADO_PERIOD ON dbo.EXT_MERCADO_REAL (ANIO_FISCAL, PERIODO);
+GO
+
+-- ------------------------------------------------------------
+-- DIM_MERCADO_PRODUCTO: Product dimension for market domain
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.DIM_MERCADO_PRODUCTO', 'U') IS NOT NULL DROP TABLE dbo.DIM_MERCADO_PRODUCTO;
+CREATE TABLE dbo.DIM_MERCADO_PRODUCTO (
+    ID_PRODUCTO         INT             IDENTITY(1,1)   NOT NULL,
+    PRODUCTO_COD        VARCHAR(20)     NOT NULL,
+    PRODUCTO_DESC       VARCHAR(200)    NOT NULL,
+    METAL               VARCHAR(10)     NULL,
+    UNIDAD_MEDIDA       VARCHAR(10)     NULL,
+    CATEGORIA           VARCHAR(50)     NULL,           -- CONCENTRADO, REFINADO, DORÉ, etc.
+    UNIDAD_NEGOCIO      VARCHAR(50)     NULL,           -- MINA, FUNDICION, etc.
+    ACTIVO              BIT             NOT NULL DEFAULT 1,
+    FECHA_ACTUALIZACION DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_DIM_MERCADO_PROD PRIMARY KEY CLUSTERED (ID_PRODUCTO),
+    CONSTRAINT UQ_DIM_MERCADO_PROD_COD UNIQUE (PRODUCTO_COD)
+);
+GO
+
+-- ------------------------------------------------------------
+-- FACT_MERCADO_REAL: Fact table for actual market data
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.FACT_MERCADO_REAL', 'U') IS NOT NULL DROP TABLE dbo.FACT_MERCADO_REAL;
+CREATE TABLE dbo.FACT_MERCADO_REAL (
+    ID_FACT_MERCADO     BIGINT          IDENTITY(1,1)   NOT NULL,
+    EMPRESA             VARCHAR(4)      NOT NULL,
+    PRODUCTO_COD        VARCHAR(20)     NOT NULL,
+    PRODUCTO_DESC       VARCHAR(200)    NULL,
+    METAL               VARCHAR(10)     NULL,
+    UNIDAD_MEDIDA       VARCHAR(10)     NULL,
+    ANIO_FISCAL         SMALLINT        NOT NULL,
+    PERIODO             TINYINT         NOT NULL,
+    PERIODO_LABEL       VARCHAR(7)      NOT NULL,
+    VOLUMEN_REAL        DECIMAL(18,4)   NOT NULL DEFAULT 0,
+    PRECIO_REAL_USD     DECIMAL(18,4)   NOT NULL DEFAULT 0,
+    INGRESO_REAL_ML     DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    INGRESO_REAL_USD    DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    TIPO_CAMBIO         DECIMAL(10,4)   NULL,
+    INGRESO_CALCULADO_USD DECIMAL(18,2) NULL,           -- Volumen * Precio (for reconciliation)
+    EXECUTION_ID        VARCHAR(100)    NOT NULL,
+    FECHA_PROCESO       DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_FACT_MERCADO_REAL PRIMARY KEY CLUSTERED (ID_FACT_MERCADO)
+);
+CREATE INDEX IX_FACT_MERCADO_PERIOD   ON dbo.FACT_MERCADO_REAL (ANIO_FISCAL, PERIODO);
+CREATE INDEX IX_FACT_MERCADO_PRODUCTO ON dbo.FACT_MERCADO_REAL (PRODUCTO_COD);
+CREATE INDEX IX_FACT_MERCADO_METAL    ON dbo.FACT_MERCADO_REAL (METAL);
+GO
+
+-- ------------------------------------------------------------
+-- FACT_MERCADO_EXPORTABLE: Aggregated market data for Power BI
+-- ------------------------------------------------------------
+IF OBJECT_ID('dbo.FACT_MERCADO_EXPORTABLE', 'U') IS NOT NULL DROP TABLE dbo.FACT_MERCADO_EXPORTABLE;
+CREATE TABLE dbo.FACT_MERCADO_EXPORTABLE (
+    ID_FACT_MERCADO_EXP BIGINT          IDENTITY(1,1)   NOT NULL,
+    EMPRESA             VARCHAR(4)      NOT NULL,
+    PRODUCTO_COD        VARCHAR(20)     NOT NULL,
+    PRODUCTO_DESC       VARCHAR(200)    NULL,
+    METAL               VARCHAR(10)     NULL,
+    UNIDAD_MEDIDA       VARCHAR(10)     NULL,
+    ANIO_FISCAL         SMALLINT        NOT NULL,
+    PERIODO             TINYINT         NOT NULL,
+    PERIODO_LABEL       VARCHAR(7)      NOT NULL,
+    TOTAL_VOLUMEN       DECIMAL(18,4)   NOT NULL DEFAULT 0,
+    PRECIO_PROMEDIO_USD DECIMAL(18,4)   NULL,
+    TOTAL_INGRESO_ML    DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    TOTAL_INGRESO_USD   DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    TIPO_CAMBIO_PROMEDIO DECIMAL(10,4)  NULL,
+    INGRESO_POR_UNIDAD_USD DECIMAL(18,4) NULL,
+    EXECUTION_ID        VARCHAR(100)    NOT NULL,
+    FECHA_PROCESO       DATETIME2       NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_FACT_MERCADO_EXP PRIMARY KEY CLUSTERED (ID_FACT_MERCADO_EXP)
+);
+CREATE INDEX IX_FACT_MERCADO_EXP_PERIOD   ON dbo.FACT_MERCADO_EXPORTABLE (ANIO_FISCAL, PERIODO);
+CREATE INDEX IX_FACT_MERCADO_EXP_PRODUCTO ON dbo.FACT_MERCADO_EXPORTABLE (PRODUCTO_COD);
+GO
