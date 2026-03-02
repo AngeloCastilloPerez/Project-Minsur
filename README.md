@@ -80,6 +80,7 @@ Los dominios cubiertos son:
 
 ```
 Project-Minsur/
+├── assets/                       # Recursos estáticos (imágenes, GIFs, etc.)
 ├── adf/                          # Pipelines de Azure Data Factory (ARM/JSON)
 │   ├── pl_GA_Master.json
 │   ├── pl_CxC_Master.json
