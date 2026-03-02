@@ -2,6 +2,8 @@
 
 Repositorio oficial del proyecto de migración del pipeline ETL de finanzas de Minsur desde la infraestructura on-premise (Jenkins) hacia Microsoft Azure.
 
+![Portfolio Minsur](assets/portfolio-minsur.gif)
+
 ---
 
 ## Descripción
