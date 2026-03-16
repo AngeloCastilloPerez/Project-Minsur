@@ -19,6 +19,12 @@ Los dominios cubiertos son:
 
 ---
 
+## Demo
+
+![Demo del pipeline ETL](docs/assets/demo.gif)
+
+---
+
 ## Arquitectura
 
 ```
